@@ -37,8 +37,21 @@ def main() -> None:
         "--filter",
         help="Comma-separated filter patterns (e.g., legacy,dev,portal)"
     )
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Check if domains resolve (slower)"
+    )
+    parser.add_argument(
+        "--live-only",
+        action="store_true",
+        help="Only output domains that resolve (implies --live)"
+    )
     
     args = parser.parse_args()
+    
+    # --live-only implies --live
+    check_liveness = args.live or args.live_only
     
     # Select source
     source = CrtshSource()
@@ -48,8 +61,12 @@ def main() -> None:
     
     # Process
     filters: list[str] = args.filter.split(",") if args.filter else []
-    processor = Processor(filters=filters)
+    processor = Processor(filters=filters, check_liveness=check_liveness)
     assets = processor.process(assets)
+    
+    # Filter to live only if requested
+    if args.live_only:
+        assets = [a for a in assets if a.live is True]
     
     # Output
     if args.format == "json":
