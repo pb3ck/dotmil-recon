@@ -1,0 +1,12 @@
+[project]
+name = "dotmil-recon"
+version = "0.1.0"
+description = "DoD asset enumeration tool"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "requests>=2.28",
+]
+
+[project.scripts]
+dotmil-recon = "dotmil_recon.cli:main"
