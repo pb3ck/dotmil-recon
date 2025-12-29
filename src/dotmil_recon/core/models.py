@@ -3,6 +3,23 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+
+class HttpProbeResult(BaseModel):
+    """Results from HTTP probing a domain."""
+    
+    url: str
+    status_code: int
+    final_url: Optional[str] = None  # after redirects
+    headers: dict[str, str] = Field(default_factory=dict)
+    technologies: list[str] = Field(default_factory=list)
+    server: Optional[str] = None
+    title: Optional[str] = None
+    content_length: Optional[int] = None
+    tls: bool = False
+    error: Optional[str] = None  # error message if probe failed
+    duration_ms: Optional[int] = None  # response time in milliseconds
+    
+
 class Asset(BaseModel):
     """A discovered DoD asset."""
 
@@ -17,5 +34,9 @@ class Asset(BaseModel):
     cert_expires: Optional[datetime] = None
     tags: list[str] = Field(default_factory=list)
     live: Optional[bool] = None
+    
+    # HTTP probe results
+    http: Optional[HttpProbeResult] = None
+    https: Optional[HttpProbeResult] = None
 
     # TODO: metadata field for source-specific data (structure TBD)

@@ -40,18 +40,34 @@ def main() -> None:
     parser.add_argument(
         "--live",
         action="store_true",
-        help="Check if domains resolve (slower)"
+        help="Check if domains resolve (DNS only)"
     )
     parser.add_argument(
         "--live-only",
         action="store_true",
         help="Only output domains that resolve (implies --live)"
     )
+    parser.add_argument(
+        "--probe",
+        action="store_true",
+        help="Probe HTTP/HTTPS and detect technologies (implies --live)"
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress output"
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Verbose output (show errors, redirects, timing)"
+    )
     
     args = parser.parse_args()
     
-    # --live-only implies --live
-    check_liveness = args.live or args.live_only
+    # --live-only implies --live, --probe implies --live
+    check_liveness = args.live or args.live_only or args.probe
+    probe_http = args.probe
     
     # Select source
     source = CrtshSource()
@@ -61,7 +77,13 @@ def main() -> None:
     
     # Process
     filters: list[str] = args.filter.split(",") if args.filter else []
-    processor = Processor(filters=filters, check_liveness=check_liveness)
+    processor = Processor(
+        filters=filters, 
+        check_liveness=check_liveness,
+        probe_http=probe_http,
+        progress=not args.no_progress,
+        verbose=args.verbose,
+    )
     assets = processor.process(assets)
     
     # Filter to live only if requested

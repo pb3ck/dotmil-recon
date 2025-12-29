@@ -52,7 +52,7 @@ class CrtshSource(BaseSource):
             try:
                 response = requests.get(
                     self.base_url,
-                    params={"q": query, "output": "json"},
+                    params={"q": query, "output": "json", "exclude": "expired"},
                     headers={"User-Agent": "dotmil-recon/0.1.0"},
                     timeout=120
                 )
