@@ -1,5 +1,8 @@
 import argparse
+import json
+from datetime import datetime, timezone
 
+from dotmil_recon.core.models import Asset
 from dotmil_recon.core.processor import Processor
 from dotmil_recon.outputs.csv import CsvOutput
 from dotmil_recon.outputs.json import JsonOutput
@@ -16,6 +19,10 @@ def main() -> None:
         "-q", "--query",
         default="%.mil",
         help="Domain pattern to search (default: %%.mil)"
+    )
+    parser.add_argument(
+        "-i", "--input",
+        help="Input JSON file with assets to process (skips crt.sh query)"
     )
     parser.add_argument(
         "-s", "--source",
@@ -69,11 +76,12 @@ def main() -> None:
     check_liveness = args.live or args.live_only or args.probe
     probe_http = args.probe
     
-    # Select source
-    source = CrtshSource()
-    
-    # Fetch assets
-    assets = source.fetch(args.query)
+    # Load assets from input file or fetch from source
+    if args.input:
+        assets = load_assets_from_file(args.input)
+    else:
+        source = CrtshSource()
+        assets = source.fetch(args.query)
     
     # Process
     filters: list[str] = args.filter.split(",") if args.filter else []
@@ -100,6 +108,31 @@ def main() -> None:
     
     if not args.output:
         print(result)
+
+
+def load_assets_from_file(filepath: str) -> list[Asset]:
+    """Load assets from a JSON file."""
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+    
+    assets: list[Asset] = []
+    for item in data:
+        # Handle both full Asset format and simplified format
+        if 'discovered_at' in item:
+            # Full Asset format
+            assets.append(Asset(**item))
+        else:
+            # Simplified format (just domain, ip, live, etc.)
+            assets.append(Asset(
+                domain=item['domain'],
+                source=item.get('source', 'file'),
+                ip=item.get('ip'),
+                live=item.get('live'),
+                tags=item.get('tags', []),
+                discovered_at=datetime.now(timezone.utc),
+            ))
+    
+    return assets
 
 
 if __name__ == "__main__":
